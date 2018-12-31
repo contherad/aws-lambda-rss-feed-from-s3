@@ -5,7 +5,7 @@ AWS.config.region = 'us-west-2';
 
 var RSS = require('rss');
 var pd = require('pretty-data').pd;
-var S3BUCKET = ibeileveinchrist.net
+var S3BUCKET = 'ibeileveinchrist.net'
 
 let s3 = new AWS.S3({apiVersion: '2006-03-01'});
 var listObjectsV2Param = {
@@ -17,7 +17,7 @@ var listObjectsV2Param = {
 var mediaURL = 'http://ibeileveinchrist.net/';
 var callsRemaining = 10;
 var maxItemsInRSSFeed = 25;
-var bandAudioFiles = [];
+var episodes = [];
 
 exports.handler = (event, context, callback) => {
   // Kick off lambda by listing objecst from S3

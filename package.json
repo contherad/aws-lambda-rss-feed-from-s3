@@ -11,7 +11,7 @@
     "aws-sdk": "^2.3.16",
     "node-lambda": "^0.8.5",
     "pretty-data": "^0.40.0",
-    "rss": "^1.2.1"
+    "rss": "^1.2.2"
   },
   "devDependencies": {},
   "scripts": {
