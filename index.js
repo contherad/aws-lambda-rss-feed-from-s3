@@ -5,15 +5,16 @@ AWS.config.region = 'us-west-2';
 
 var RSS = require('rss');
 var pd = require('pretty-data').pd;
+var S3BUCKET = ibeileveinchrist.net
 
 let s3 = new AWS.S3({apiVersion: '2006-03-01'});
 var listObjectsV2Param = {
-  Bucket: 'media.downtowncornerstone.org',
+  Bucket: S3BUCKET,
   MaxKeys: 1000,
-  Prefix: 'bands/'
+  Prefix: 'episodes/'
 };
 
-var mediaURL = 'http://media.downtowncornerstone.org/';
+var mediaURL = 'http://ibeileveinchrist.net/';
 var callsRemaining = 10;
 var maxItemsInRSSFeed = 25;
 var bandAudioFiles = [];
@@ -31,7 +32,7 @@ function handleListObjectsV2(err, data) {
   } else {
     // console.log(data);
     console.log("Retrieved " + data.Contents.length + " files from S3");
-    bandAudioFiles = bandAudioFiles.concat(data.Contents);
+    episodes = episodes.concat(data.Contents);
     if (callsRemaining >= 1 || callsRemaining < 0) {
       listObjectsV2Param.ContinuationToken = data.NextContinuationToken;
       s3.listObjectsV2(listObjectsV2Param, handleListObjectsV2);
@@ -45,12 +46,12 @@ function doneGettingS3Objects() {
   console.log('Completed getting file information from S3');
 
   // remove duplicate files
-  bandAudioFiles = bandAudioFiles.filter(function(item, pos, array){
+  episodes = episodes.filter(function(item, pos, array){
     return array.map(function(mapItem){ return mapItem.Key; }).indexOf(item.Key) === pos;
   });
 
   // Only mp3 files that are worship songs
-  bandAudioFiles = bandAudioFiles.filter(
+  episodes = episodes.filter(
     function(file){
       if ( ! file.Key.match(/\.mp3$/) ) return false;
       if ( file.Key.match(/speaking|reading|sermon|advent|announcement|assurance|bendiction|confession|commission|farewell|welcome|call_to_worship|exhortation|justification|passage|scripture|candle lighting/i)) return false;
@@ -58,24 +59,24 @@ function doneGettingS3Objects() {
     }
   );
 
-  for (var i in bandAudioFiles){
-    var file = bandAudioFiles[i];
+  for (var i in episodes){
+    var file = episodes[i];
     file = parseAudioFile(file);
   }
 
   // Remove files without a valid date
-  bandAudioFiles = bandAudioFiles.filter(
+  episodes = episodes.filter(
     function(file){ return file !== null && file.date !== null; }
   );
 
   // Sort in reverse chronological order
-  bandAudioFiles.sort(function(a,b){
+  episodes.sort(function(a,b){
     if(a.date < b.date) return 1;
     if(a.date > b.date) return -1;
     return 0;
   });
 
-  console.log('Total number of audio files: ' + bandAudioFiles.length);
+  console.log('Total number of audio files: ' + episodes.length);
   // console.log(bandAudioFiles);
 
   generateRSSFeed();
@@ -140,12 +141,12 @@ function filePathToTitle(path) {
 
 function generateRSSFeed(){
   var feed = new RSS({
-    title: 'DCC - Band Reference Audio',
-    description: 'A feed for worship band members to get audio recordings of worship songs',
-    feed_url: mediaURL + 'DCCBandRef.xml',
+    title: 'I Believe in Christ Podcast',
+    description: 'A Podcast for following lessons from Come, Follow Me 2019 and News from the Church of Jesus Christ of Latter-day Saints.',
+    feed_url: mediaURL + 'ibeileveinchrist.xml',
     site_url: mediaURL,
-    webMaster: 'webmaster@downtowncornerstone.org (Web Master)',
-    copyright: 'Downtown Cornerstone Church 2016',
+    webMaster: 'podcast@ibeileveinchrist.net (Web Master)',
+    copyright: 'Conrad Southworth',
     language: 'en',
     pubDate: new Date().toUTCString(),
     ttl: '60',
@@ -165,20 +166,20 @@ function generateRSSFeed(){
       ]},
       {'itunes:owner': [
         {'itunes:name': 'Web Master'},
-        {'itunes:email': 'webmaster@downtowncornerstone.org'}
+        {'itunes:email': 'podcast@ibeileveinchrist.net'}
       ]},
       {'itunes:image': {
         _attr: {
-          href: 'http://media.downtowncornerstone.org/images/DCC-icon_85bk_itunes.jpg'
+          href: 'https://s3-us-west-2.amazonaws.com/ibelieveinchrist.net/media/logo.jpg'
         }
       }},
       {'itunes:explicit': 'no'},
     ]
   });
 
-  for (var i in bandAudioFiles){
+  for (var i in episodes){
     if ( i >= maxItemsInRSSFeed ){break;}
-    var file = bandAudioFiles[i];
+    var file = episodes[i];
     // console.log(file);
     var title = file.date + " " + file.title;
     feed.item({
@@ -198,8 +199,8 @@ function generateRSSFeed(){
 
 function uploadRSSFeedToS3(xml){
   var uploadParams = {
-    Bucket: 'media.downtowncornerstone.org', 
-    Key: 'DCCBandRef.xml', 
+    Bucket: S3BUCKET, 
+    Key: 'ibelieveinchrist.xml', 
     Body: xml,
     ContentType: 'application/rss+xml'};
   s3.upload(uploadParams, function(err, data) {
